@@ -39,7 +39,7 @@ export default class MemoriesList extends BaseCommand {
         title: m.title ?? '—',
         type: m.type,
         status: m.status,
-        chunks: m.chunksCount ?? '—',
+        tokens: m.tokenCount ?? '—',
         created: m.createdAt,
       })),
       {
@@ -47,7 +47,7 @@ export default class MemoriesList extends BaseCommand {
         title: { header: 'Title' },
         type: { header: 'Type' },
         status: { header: 'Status' },
-        chunks: { header: 'Chunks' },
+        tokens: { header: 'Tokens' },
         created: { header: 'Created' },
       },
     );

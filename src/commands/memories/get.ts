@@ -29,7 +29,7 @@ export default class MemoriesGet extends BaseCommand {
       `  Type:    ${memory.type}`,
       `  Status:  ${memory.status}`,
       `  Tags:    ${memory.tags.length > 0 ? memory.tags.join(', ') : '—'}`,
-      `  Chunks:  ${memory.chunksCount ?? '—'}`,
+      `  Tokens:  ${memory.tokenCount ?? '—'}`,
       `  Created: ${memory.createdAt}`,
       '',
     ].join('\n'));

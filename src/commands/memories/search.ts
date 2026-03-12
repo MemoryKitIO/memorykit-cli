@@ -39,7 +39,7 @@ export default class MemoriesSearch extends BaseCommand {
   }
 }
 
-function formatResults(result: { results: Array<{ memoryId: string; memoryTitle: string | null; content: string; score: number }>; totalResults: number }): string {
+function formatResults(result: { results: Array<{ memoryId: string; title: string | null; content: string; score: number }>; totalResults: number }): string {
   if (result.results.length === 0) {
     return 'No results found.';
   }
@@ -47,7 +47,7 @@ function formatResults(result: { results: Array<{ memoryId: string; memoryTitle:
   const lines: string[] = [`Found ${result.totalResults} result(s):`, ''];
   for (const r of result.results) {
     lines.push(`  [${r.score.toFixed(3)}] ${r.memoryId}`);
-    if (r.memoryTitle) lines.push(`         Title: ${r.memoryTitle}`);
+    if (r.title) lines.push(`         Title: ${r.title}`);
     lines.push(`         ${r.content.slice(0, 200)}${r.content.length > 200 ? '...' : ''}`);
     lines.push('');
   }

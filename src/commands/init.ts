@@ -39,13 +39,17 @@ export default class Init extends BaseCommand {
 
     const dashboard = this.getDashboardClient();
 
+    // Keep email/password for re-login step
+    let userEmail: string;
+    let userPassword: string;
+
     // --- Step 1: Register ---
     if (!flags['skip-register']) {
       step++;
       this.output.step(step, totalSteps, 'Register account');
 
-      const email = await promptIfMissing(flags.email, { message: 'Email:' });
-      const password = await promptIfMissing(flags.password, { message: 'Password:', type: 'password' });
+      userEmail = await promptIfMissing(flags.email, { message: 'Email:' });
+      userPassword = await promptIfMissing(flags.password, { message: 'Password:', type: 'password' });
 
       if (!flags['gdpr-consent']) {
         const consent = await promptConfirm(undefined, 'Accept GDPR data processing consent?');
@@ -55,10 +59,10 @@ export default class Init extends BaseCommand {
       }
 
       const spinner = this.output.spinner('Registering...');
-      await dashboard.register(email, password, true);
+      await dashboard.register(userEmail, userPassword, true);
       spinner.stop();
 
-      this.credentialsManager.update(this.profileName, { email });
+      this.credentialsManager.update(this.profileName, { email: userEmail });
 
       // --- Step 2: Verify ---
       step++;
@@ -69,7 +73,7 @@ export default class Init extends BaseCommand {
       });
 
       const verifySpinner = this.output.spinner('Verifying...');
-      await dashboard.verify(email, code);
+      await dashboard.verify(userEmail, code);
       verifySpinner.stop();
 
       // --- Step 3: Login ---
@@ -77,30 +81,30 @@ export default class Init extends BaseCommand {
       this.output.step(step, totalSteps, 'Login');
 
       const loginSpinner = this.output.spinner('Logging in...');
-      const loginResult = await dashboard.login(email, password);
+      const loginResult = await dashboard.login(userEmail, userPassword);
       loginSpinner.stop();
 
       this.credentialsManager.update(this.profileName, {
         accessToken: loginResult.access_token,
         refreshToken: loginResult.refresh_token,
-        email,
+        email: userEmail,
       });
     } else {
       // Skip register — just login
       step++;
       this.output.step(step, totalSteps, 'Login');
 
-      const email = await promptIfMissing(flags.email, { message: 'Email:' });
-      const password = await promptIfMissing(flags.password, { message: 'Password:', type: 'password' });
+      userEmail = await promptIfMissing(flags.email, { message: 'Email:' });
+      userPassword = await promptIfMissing(flags.password, { message: 'Password:', type: 'password' });
 
       const loginSpinner = this.output.spinner('Logging in...');
-      const loginResult = await dashboard.login(email, password);
+      const loginResult = await dashboard.login(userEmail, userPassword);
       loginSpinner.stop();
 
       this.credentialsManager.update(this.profileName, {
         accessToken: loginResult.access_token,
         refreshToken: loginResult.refresh_token,
-        email,
+        email: userEmail,
       });
     }
 
@@ -124,9 +128,8 @@ export default class Init extends BaseCommand {
     step++;
     this.output.step(step, totalSteps, 'Refresh session');
 
-    const creds = this.credentialsManager.getProfile(this.profileName);
     const reLoginSpinner = this.output.spinner('Refreshing session...');
-    const refreshResult = await dashboard.login(creds.email!, flags.password ?? (await promptIfMissing(undefined, { message: 'Password (re-login):', type: 'password' })));
+    const refreshResult = await dashboard.login(userEmail, userPassword);
     reLoginSpinner.stop();
 
     this.credentialsManager.update(this.profileName, {
@@ -163,7 +166,7 @@ export default class Init extends BaseCommand {
 
     // --- Done ---
     const summary = {
-      email: creds.email,
+      email: userEmail,
       company: { id: company.id, name: company.name },
       project: { id: project.id, name: project.name },
       apiKey: apiKey.api_key,

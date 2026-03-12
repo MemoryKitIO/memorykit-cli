@@ -122,12 +122,28 @@ export class DashboardClient {
 
       if (res.status === 204) return undefined as T;
 
-      const json = await res.json() as Record<string, unknown>;
+      let json: Record<string, unknown>;
+      try {
+        json = await res.json() as Record<string, unknown>;
+      } catch {
+        if (!res.ok) {
+          const err = new Error(res.statusText) as Error & { statusCode: number };
+          err.statusCode = res.status;
+          throw err;
+        }
+        return undefined as T;
+      }
 
       if (!res.ok) {
-        const msg = (json['detail'] as string) ?? (json['message'] as string) ?? res.statusText;
-        const err = new Error(msg) as Error & { statusCode: number };
+        const errObj = json['error'] as Record<string, unknown> | undefined;
+        const msg = errObj?.['message'] as string
+          ?? (json['detail'] as string)
+          ?? (json['message'] as string)
+          ?? res.statusText;
+        const code = errObj?.['code'] as string | undefined;
+        const err = new Error(msg) as Error & { statusCode: number; code?: string };
         err.statusCode = res.status;
+        if (code) err.code = code;
         throw err;
       }
 
