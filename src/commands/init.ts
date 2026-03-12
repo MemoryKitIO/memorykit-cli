@@ -3,12 +3,13 @@ import { BaseCommand } from '../base-command.js';
 import { promptIfMissing, promptConfirm, slugify } from '../lib/prompts.js';
 
 export default class Init extends BaseCommand {
-  static description = 'Full setup wizard: register → verify → login → company → project → API key';
+  static description = 'Full setup wizard: register → verify → login → company → project → API key. Verification is optional — skip it and verify later with `auth verify`.';
 
   static examples = [
     '$ memorykit init',
     '$ memorykit init --email user@example.com --password secret --gdpr-consent',
-    '$ memorykit init --skip-register --email user@example.com --password secret',
+    '$ memorykit init --email u@ex.com --password p --gdpr-consent --json  # register only, verify later',
+    '$ memorykit init --skip-register --email user@example.com --password secret  # after verifying',
     '$ memorykit init --email u@ex.com --password p --verification-code 123456 --company-name "Acme" --project-name "Main" --gdpr-consent --json',
   ];
 
@@ -64,12 +65,45 @@ export default class Init extends BaseCommand {
 
       this.credentialsManager.update(this.profileName, { email: userEmail });
 
-      // --- Step 2: Verify ---
+      // --- Step 2: Verify (optional) ---
       step++;
       this.output.step(step, totalSteps, 'Verify email');
 
+      let hasCode = !!flags['verification-code'];
+
+      // In interactive mode, ask if user wants to enter code now
+      if (!hasCode && process.stdin.isTTY) {
+        this.log(`  A verification code has been sent to ${userEmail}`);
+        hasCode = await promptConfirm(undefined, 'Enter verification code now?');
+      }
+
+      if (!hasCode) {
+        // Exit gracefully — user will verify later
+        const result = {
+          email: userEmail,
+          registered: true,
+          verified: false,
+          nextSteps: [
+            `memorykit auth verify --email ${userEmail} --code XXXXXX`,
+            `memorykit init --skip-register --email ${userEmail} --password <password>`,
+          ],
+        };
+
+        this.output.success(result, [
+          '',
+          '  ✓ Account registered!',
+          '',
+          '  Next steps:',
+          `  1. Check your email (${userEmail}) for the verification code`,
+          `  2. Run: memorykit auth verify --email ${userEmail} --code XXXXXX`,
+          `  3. Run: memorykit init --skip-register --email ${userEmail}`,
+          '',
+        ].join('\n'));
+        return;
+      }
+
       const code = await promptIfMissing(flags['verification-code'], {
-        message: 'Verification code (check your email):',
+        message: 'Verification code:',
       });
 
       const verifySpinner = this.output.spinner('Verifying...');
