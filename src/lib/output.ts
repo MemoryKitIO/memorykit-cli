@@ -18,15 +18,16 @@ export class OutputFormatter {
     }
   }
 
-  error(err: Error & { statusCode?: number; code?: string }): void {
+  error(err: Error & { statusCode?: number; code?: string; flag?: string }): void {
     if (this.jsonMode) {
       this.cmd.log(JSON.stringify({
         ok: false,
         error: {
           name: err.name,
           message: err.message,
-          ...(err.statusCode ? { statusCode: err.statusCode } : {}),
           ...(err.code ? { code: err.code } : {}),
+          ...(err.statusCode ? { statusCode: err.statusCode } : {}),
+          ...(err.flag ? { missingFlag: err.flag } : {}),
         },
       }, null, 2));
     } else {

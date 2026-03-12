@@ -27,18 +27,22 @@ export abstract class BaseCommand extends Command {
   }
 
   protected getDashboardClient(): DashboardClient {
-    const baseUrl = this.configManager.get('baseUrl');
+    const baseUrl = process.env.MEMORYKIT_BASE_URL
+      ?? this.configManager.get('baseUrl');
     return new DashboardClient(baseUrl, this.credentialsManager, this.profileName);
   }
 
   protected getMemoryKitSDK(): MemoryKit {
-    const creds = this.credentialsManager.getProfile(this.profileName);
-    if (!creds.apiKey) {
-      throw new Error('No API key configured. Run `memorykit init` or `memorykit apikey create` first.');
+    // Env vars take priority (agent-friendly: no init needed)
+    const apiKey = process.env.MEMORYKIT_API_KEY
+      ?? this.credentialsManager.getProfile(this.profileName).apiKey;
+    if (!apiKey) {
+      throw new Error('No API key configured. Set MEMORYKIT_API_KEY env var, or run `memorykit init`.');
     }
-    const baseUrl = this.configManager.get('baseUrl');
+    const baseUrl = process.env.MEMORYKIT_BASE_URL
+      ?? this.configManager.get('baseUrl');
     return new MemoryKit({
-      apiKey: creds.apiKey,
+      apiKey,
       baseUrl: `${baseUrl}/v1`,
     });
   }

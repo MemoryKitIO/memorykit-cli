@@ -29,7 +29,7 @@ export default class ApiKeyRevoke extends BaseCommand {
       this.error('No company selected. Use --company-id or run `memorykit company create` first.');
     }
 
-    if (!flags.force) {
+    if (!flags.force && !flags.json) {
       const confirmed = await promptConfirm(undefined, `Revoke API key ${args.id}? This cannot be undone.`);
       if (!confirmed) {
         this.output.info('Cancelled.');

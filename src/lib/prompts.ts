@@ -1,17 +1,40 @@
 import { input, password, confirm, select } from '@inquirer/prompts';
 
+/** Error thrown when a required flag is missing in non-interactive mode. */
+export class MissingFlagError extends Error {
+  code = 'MISSING_FLAG';
+  flag: string;
+
+  constructor(promptMessage: string, flag?: string) {
+    const flagName = flag ?? inferFlagName(promptMessage);
+    super(`Missing required flag: --${flagName}`);
+    this.name = 'MissingFlagError';
+    this.flag = flagName;
+  }
+}
+
+function inferFlagName(message: string): string {
+  // "Email:" → "email", "Company name:" → "company-name"
+  return message
+    .replace(/[:()?]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-');
+}
+
 export async function promptIfMissing(
   flagValue: string | undefined,
   options: {
     message: string;
     type?: 'input' | 'password';
     validate?: (v: string) => boolean | string;
+    flag?: string;
   },
 ): Promise<string> {
   if (flagValue !== undefined) return flagValue;
 
   if (!process.stdin.isTTY) {
-    throw new Error(`Missing required input: "${options.message}". Use the corresponding flag in non-interactive mode.`);
+    throw new MissingFlagError(options.message, options.flag);
   }
 
   const fn = options.type === 'password' ? password : input;
@@ -28,9 +51,8 @@ export async function promptConfirm(
 ): Promise<boolean> {
   if (flagValue !== undefined) return flagValue;
 
-  if (!process.stdin.isTTY) {
-    throw new Error(`Missing required confirmation: "${message}". Use the corresponding flag in non-interactive mode.`);
-  }
+  // Auto-confirm in non-interactive mode (agent use case)
+  if (!process.stdin.isTTY) return true;
 
   return confirm({ message });
 }
@@ -40,12 +62,13 @@ export async function promptSelect<T extends string>(
   options: {
     message: string;
     choices: Array<{ name: string; value: T }>;
+    flag?: string;
   },
 ): Promise<T> {
   if (flagValue !== undefined) return flagValue;
 
   if (!process.stdin.isTTY) {
-    throw new Error(`Missing required selection: "${options.message}". Use the corresponding flag in non-interactive mode.`);
+    throw new MissingFlagError(options.message, options.flag);
   }
 
   return select(options) as Promise<T>;

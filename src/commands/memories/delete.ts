@@ -23,7 +23,7 @@ export default class MemoriesDelete extends BaseCommand {
     const { args, flags } = await this.parse(MemoriesDelete);
     const sdk = this.getMemoryKitSDK();
 
-    if (!flags.force) {
+    if (!flags.force && !flags.json) {
       const confirmed = await promptConfirm(undefined, `Delete memory ${args.id}? This cannot be undone.`);
       if (!confirmed) {
         this.output.info('Cancelled.');
