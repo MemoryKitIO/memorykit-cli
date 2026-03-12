@@ -34,14 +34,17 @@ export default class MemoriesList extends BaseCommand {
     spinner.stop();
 
     this.output.table(
-      result.data.map((m) => ({
-        id: m.id,
-        title: m.title ?? '—',
-        type: m.type,
-        status: m.status,
-        tokens: m.tokenCount ?? '—',
-        created: m.createdAt,
-      })),
+      result.data.map((m) => {
+        const raw = m as unknown as Record<string, unknown>;
+        return {
+          id: m.id,
+          title: m.title ?? '—',
+          type: m.type,
+          status: m.status,
+          tokens: (m.tokenCount ?? raw['token_count'] ?? '—') as string | number,
+          created: (m.createdAt ?? raw['created_at'] ?? '') as string,
+        };
+      }),
       {
         id: { header: 'ID' },
         title: { header: 'Title' },

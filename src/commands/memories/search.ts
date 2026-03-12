@@ -35,20 +35,26 @@ export default class MemoriesSearch extends BaseCommand {
     });
     spinner.stop();
 
-    this.output.success(result, formatResults(result));
+    this.output.success(result, formatResults(result as unknown as Record<string, unknown>));
   }
 }
 
-function formatResults(result: { results: Array<{ memoryId: string; title: string | null; content: string; score: number }>; totalResults: number }): string {
-  if (result.results.length === 0) {
+function formatResults(result: Record<string, unknown>): string {
+  const results = result.results as Array<Record<string, unknown>> | undefined;
+  if (!results || results.length === 0) {
     return 'No results found.';
   }
 
-  const lines: string[] = [`Found ${result.totalResults} result(s):`, ''];
-  for (const r of result.results) {
-    lines.push(`  [${r.score.toFixed(3)}] ${r.memoryId}`);
-    if (r.title) lines.push(`         Title: ${r.title}`);
-    lines.push(`         ${r.content.slice(0, 200)}${r.content.length > 200 ? '...' : ''}`);
+  const total = (result.totalResults ?? result.total_results ?? results.length) as number;
+  const lines: string[] = [`Found ${total} result(s):`, ''];
+  for (const r of results) {
+    const id = (r.memoryId ?? r.memory_id ?? '—') as string;
+    const title = (r.title ?? r.memory_title ?? r.memoryTitle) as string | null;
+    const content = (r.content ?? '') as string;
+    const score = (r.score ?? 0) as number;
+    lines.push(`  [${score.toFixed(3)}] ${id}`);
+    if (title) lines.push(`         Title: ${title}`);
+    lines.push(`         ${content.slice(0, 200)}${content.length > 200 ? '...' : ''}`);
     lines.push('');
   }
   return lines.join('\n');

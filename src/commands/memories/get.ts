@@ -22,15 +22,17 @@ export default class MemoriesGet extends BaseCommand {
     const memory = await sdk.memories.get(args.id);
     spinner.stop();
 
+    const raw = memory as unknown as Record<string, unknown>;
+    const tags = (memory.tags ?? raw['tags'] ?? []) as string[];
     this.output.success(memory, [
       '',
       `  ID:      ${memory.id}`,
       `  Title:   ${memory.title ?? '—'}`,
       `  Type:    ${memory.type}`,
       `  Status:  ${memory.status}`,
-      `  Tags:    ${memory.tags.length > 0 ? memory.tags.join(', ') : '—'}`,
-      `  Tokens:  ${memory.tokenCount ?? '—'}`,
-      `  Created: ${memory.createdAt}`,
+      `  Tags:    ${tags.length > 0 ? tags.join(', ') : '—'}`,
+      `  Tokens:  ${(memory.tokenCount ?? raw['token_count'] ?? '—')}`,
+      `  Created: ${(memory.createdAt ?? raw['created_at'] ?? '')}`,
       '',
     ].join('\n'));
   }
